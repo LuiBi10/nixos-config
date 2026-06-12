@@ -4,6 +4,11 @@
   wayland.windowManager.hyprland = {
     enable = true;
 
+    # CRÍTICO: con home.stateVersion = "26.05", HM genera por defecto
+    # hyprland.lua (formato Lua nuevo), que no soporta variables tipo $mainMod.
+    # Esto fuerza el formato hyprlang clásico -> ~/.config/hypr/hyprland.conf
+    configType = "hyprlang";
+
     settings = {
       monitor = [ ",preferred,auto,auto" ];
 
@@ -25,15 +30,12 @@
         "ghostty"
         "nm-applet"
         "waybar"
-        "hyprpaper"
         "wl-paste --type text --watch cliphist store"
         "wl-paste --type image --watch cliphist store"
-        "hypridle"
-
       ];
 
       general = {
-        gaps_in = 4;
+        gaps_in = 2;
         gaps_out = 8;
         border_size = 1;
         "col.active_border" = "rgb(b4befe)";
@@ -86,6 +88,7 @@
         ];
       };
 
+      # pseudotile fue ELIMINADO en Hyprland 0.55
       dwindle = {
         preserve_split = true;
       };
@@ -105,7 +108,7 @@
       windowrule = [
         "opacity 0.85 override, match:class ^(discord)$"
         "opacity 0.85 override, match:class ^(org.kde.dolphin)$"
-        "opacity 0.95 0.85 override, match:class ^(zen-twilight)$"
+        "opacity 0.90 0.85 override, match:class ^(zen-twilight)$"
         "workspace 3, match:class ^(obsidian)$"
         "workspace 3, match:class ^(org.kde.dolphin)$"
         "workspace 3, match:class ^(Spotify)$"
@@ -116,7 +119,6 @@
         "opacity 1.0 override, match:class ^(VirtualBox Machine)$"
         "opacity 1.0 override, match:class ^(virtualbox)$"
         "float on, center on, match:class ^(VirtualBox Machine)$"
-
       ];
 
       bind = [
@@ -127,17 +129,14 @@
         "$mainMod, down, movefocus, d"
 
         # --- Gestión de Sesión y Waybar ---
-        "$mainMod SHIFT, R, exec, pkill waybar && waybar" # Reiniciar Waybar
-        "$mainMod SHIFT, Q, exit" # Cerrar sesión Hyprland
+        "$mainMod SHIFT, R, exec, pkill waybar && waybar"
+        "$mainMod SHIFT, Q, exit"
 
         # Window management
         "$mainMod, F, fullscreen"
         "$mainMod, Q, killactive"
         "$mainMod, Space, togglefloating"
-        "$mainMod CTRL, Space, pin"
-
-        # CORRECCIÓN: Se añade el keybind para invocar el pseudotiling dinámico
-        "$mainMod, P, pseudo, # dwindle"
+        "$mainMod CTRL, P, pin" # movido: antes chocaba con el script de wallpaper
 
         # Launch apps
         "$mainMod, Return, exec, ghostty"
@@ -146,7 +145,7 @@
         "ALT, Space, exec, rofi -show drun"
         "$mainMod SHIFT, F, exec, XDG_CURRENT_DESKTOP=KDE dolphin"
         "$mainMod SHIFT, K, exec, XDG_CURRENT_DESKTOP=KDE kate"
-        "$mainMod, Y, exec, ghostty -e yazi"
+        "$mainMod, R, exec, ghostty -e yazi"
         "$mainMod, V, exec, ghostty -e nvim"
         "$mainMod SHIFT, V, exec, code"
         "$mainMod, B, exec, zen-twilight"
@@ -251,6 +250,7 @@
       ];
     };
   };
+
   # --- HYPRLOCK CONFIGURATION ---
   programs.hyprlock = {
     enable = true;
@@ -299,24 +299,19 @@
       ];
     };
   };
-  # --- HYPRPAPER CONFIGURATION ---
+
+  # --- HYPRPAPER CONFIGURATION (formato nuevo, hyprpaper >= 0.8) ---
   services.hyprpaper = {
     enable = true;
     settings = {
       splash = false;
-      ipc = true;
-      preload = [
-        "/home/luibi/Pictures/lu/verde.jpg"
-      ];
-
       wallpaper = [
         {
           monitor = "eDP-1";
-          path = "/home/luibi/Pictures/lu/";
-          timeout = 600;
+          path = "/home/luibi/Pictures/lu/verde.jpg";
+          fit_mode = "cover";
         }
       ];
     };
   };
 }
-
