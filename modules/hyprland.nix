@@ -87,7 +87,6 @@
       };
 
       dwindle = {
-        # CORRECCIÓN: Se eliminó 'pseudotile = true;'
         preserve_split = true;
       };
 
