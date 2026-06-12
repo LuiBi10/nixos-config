@@ -10,19 +10,11 @@
     ./modules/zshrc.nix
     ./modules/home-packages.nix
     inputs.spicetify-nix.homeManagerModules.default
-
-    # Import the Zen Browser Home Manager module to handle Sine
-    inputs.zen-browser.homeModules.default
   ];
 
   # This is now empty and clean. 
   # Your configurations are managed inside the imported modules above.
   xdg.configFile = { };
-
-  # Enable Zen Browser and inject the Sine visual engine/customizations
-  programs.zen-browser = {
-    enable = true;
-  };
 
   programs.spicetify =
     let
@@ -79,4 +71,3 @@
     style.name = "kvantum";
   };
 }
-
