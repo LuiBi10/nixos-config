@@ -106,6 +106,9 @@
     packages = [ ];
   };
 
+  # Home manager backup 
+  home-manager.backupFileExtension = "backup";
+
   # Default shell configuration
   programs.zsh.enable = true;
   users.defaultUserShell = pkgs.zsh;

@@ -38,7 +38,6 @@
 
     # Productivity Tools
     obsidian #Productivity and note-taking app
-    logseq #local-first knowledge management system
     zathura #Reading PDF and other document formats
     libreoffice-qt6-fresh #Suite of office applications
 
