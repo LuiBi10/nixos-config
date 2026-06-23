@@ -107,8 +107,7 @@
   };
 
   # Home manager backup 
-  home-manager.backupFileExtension = "backup";
-
+  home-manager.backupFileExtension = "backup-hm"; # Resolve problem with home-manager backup files
   # Default shell configuration
   programs.zsh.enable = true;
   users.defaultUserShell = pkgs.zsh;
