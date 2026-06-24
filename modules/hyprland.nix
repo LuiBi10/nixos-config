@@ -29,9 +29,9 @@
         "systemctl --user start hyprpolkitagent"
         "ghostty"
         "nm-applet"
-        "waybar"
         "wl-paste --type text --watch cliphist store"
         "wl-paste --type image --watch cliphist store"
+        "dbus-update-activation-environment --systemd --all && systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_DATA_DIRS GIO_EXTRA_MODULES && systemctl --user start hyprland-session.target"
       ];
 
       general = {

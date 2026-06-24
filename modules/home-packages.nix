@@ -79,7 +79,6 @@
 
     # --- Hyprland & Wayland Setup ---
     hyprland # Hyprland Wayland compositor
-    waybar # Status bar for Wayland
     hyprpaper # Wallpaper manager for Hyprland
     rofi # Rofi launcher for Wayland
     hyprlock #Lockscreen
@@ -115,7 +114,6 @@
     claude-code #Claude AI CLI client
   ];
 
-  xdg.configFile."nvim".source = config.lib.file.mkOutOfStoreSymlink "/home/luibi/.config/nvim";
 
   programs.cava = {
     enable = true;

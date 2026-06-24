@@ -32,9 +32,22 @@
       };
     };
   };
+
   # Hostname and networking configuration
   networking.hostName = "nixos";
   networking.networkmanager.enable = true;
+
+  # Gestor de configuraciones y estado necesario para GTK/GNOME
+  programs.dconf.enable = true;
+
+  # Fix: Bind DConf to D-Bus to allow GTK apps to read system events
+  services.dbus.packages = with pkgs; [ dconf ];
+
+  # Fix: Inject GLib schemas globally so GTK modules (like Waybar disk) don't segfault
+  environment.systemPackages = with pkgs; [
+    glib
+    gsettings-desktop-schemas
+  ];
 
   # Timezone and localization settings
   time.timeZone = "America/Bogota";
@@ -62,6 +75,7 @@
             EV_KEY: [KEY_CAPSLOCK, KEY_MENU, KEY_RIGHTALT]
     '';
   };
+
   # X server and desktop environment settings
   services.xserver.enable = true;
   services.displayManager.sddm = {
@@ -95,6 +109,7 @@
     host = "0.0.0.0";
     port = 11434;
   };
+
   # Allow unfree packages 
   nixpkgs.config.allowUnfree = true;
 
@@ -106,13 +121,11 @@
     packages = [ ];
   };
 
-  # Home manager backup 
-  home-manager.backupFileExtension = "backup-hm"; # Resolve problem with home-manager backup files
   # Default shell configuration
   programs.zsh.enable = true;
   users.defaultUserShell = pkgs.zsh;
 
-  # Enable Firefox browser
+  # Enable Firefox browser (y dependencias de GVFS)
   services.gvfs.enable = true;
 
   # Permitir específicamente el paquete de Qt que causa el error
@@ -141,6 +154,14 @@
       FLUSH PRIVILEGES;
     '';
   };
+
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 7d";
+  };
+
+  nix.optimise.automatic = true;
 
   services.flatpak.enable = true;
 
@@ -191,4 +212,5 @@
   environment.etc."xdg/menus/applications.menu".source =
     "/run/current-system/sw/etc/xdg/menus/plasma-applications.menu";
 }
+
 

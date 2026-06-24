@@ -46,6 +46,13 @@
     };
   };
 
+  programs.waybar = {
+    enable = true;
+    systemd = {
+      enable = true;
+      targets = [ "graphical-session.target" ]; # Nueva sintaxis (Lista de Strings)
+    };
+  };
   programs.gh = {
     enable = true;
     settings = {
