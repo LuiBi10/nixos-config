@@ -1,5 +1,4 @@
-{ config, pkgs, inputs, ... }:
-
+{ config, pkgs, inputs, lib, ... }:
 {
   # Import hardware configuration
   imports = [
@@ -37,13 +36,11 @@
   networking.hostName = "nixos";
   networking.networkmanager.enable = true;
 
-  # Gestor de configuraciones y estado necesario para GTK/GNOME
+  # DConf and DBus settings for desktop compatibility
   programs.dconf.enable = true;
-
-  # Fix: Bind DConf to D-Bus to allow GTK apps to read system events
   services.dbus.packages = with pkgs; [ dconf ];
 
-  # Fix: Inject GLib schemas globally so GTK modules (like Waybar disk) don't segfault
+  # Inject GLib schemas globally
   environment.systemPackages = with pkgs; [
     glib
     gsettings-desktop-schemas
@@ -101,6 +98,13 @@
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;
+    wireplumber.extraConfig = {
+      "10-switch-on-connect" = {
+        "wireplumber.settings" = {
+          "device.routes.default-sink-switch" = true;
+        };
+      };
+    };
   };
 
   services.ollama = {
@@ -125,21 +129,40 @@
   programs.zsh.enable = true;
   users.defaultUserShell = pkgs.zsh;
 
-  # Enable Firefox browser (y dependencias de GVFS)
+  # Enable GVFS for file manager virtual filesystems
   services.gvfs.enable = true;
 
-  # Permitir específicamente el paquete de Qt que causa el error
+  # Permitted insecure packages
   nixpkgs.config.permittedInsecurePackages = [
     "electron-39.8.10"
     "qtwebengine-5.15.19"
   ];
 
-  # Activa el servicio de almacenamiento de contraseñas
-  # services.gnome.gnome-keyring.enable = true;
-  # security.pam.services.login.enableGnomeKeyring = true;
-
   # Hyprland settings for Wayland compositor
   programs.hyprland.enable = true;
+
+  # XDG desktop portal setup using Hyprland + KDE backends exclusively
+  xdg.portal = {
+    enable = true;
+    extraPortals = [
+      pkgs.xdg-desktop-portal-hyprland
+      pkgs.kdePackages.xdg-desktop-portal-kde
+    ];
+    config = {
+      common = {
+        default = [ "hyprland" "kde" ];
+      };
+      hyprland = {
+        default = [ "hyprland" "kde" ];
+      };
+    };
+  };
+
+  # Prevent systemd from ever starting xdg-desktop-portal-gtk
+  systemd.user.services.xdg-desktop-portal-gtk = {
+    enable = false;
+    unitConfig.RefuseManualStart = true;
+  };
 
   # Nix-ld settings
   programs.nix-ld.enable = true;
@@ -165,9 +188,20 @@
 
   services.flatpak.enable = true;
 
+  # System-wide environment variables for Qt, GTK, and Wayland session
   environment.variables = {
     XDG_CURRENT_DESKTOP = "Hyprland";
-    QT_QPA_PLATFORM = "wayland";
+    XDG_SESSION_TYPE = "wayland";
+    XDG_SESSION_DESKTOP = "Hyprland";
+
+    TRACKER_DISABLE_AUTO_START = "1";
+
+    GDK_BACKEND = "wayland,x11";
+
+    QT_QPA_PLATFORM = "wayland;xcb";
+    QT_QPA_PLATFORMTHEME = "kde";
+    QT_AUTO_SCREEN_SCALE_FACTOR = "1";
+    QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
   };
 
   fonts.packages = [
@@ -186,7 +220,7 @@
     openFirewall = true;
   };
 
-  # --- Sudo with insults enabled XD ---
+  # Sudo insults
   security.sudo = {
     enable = true;
     extraConfig = ''
@@ -194,13 +228,19 @@
     '';
   };
 
-  # Enable Docker
+  # Docker setup
   virtualisation.docker.rootless = {
     enable = true;
     setSocketVariable = true;
   };
+
+  # VirtualBox setup
   virtualisation.virtualbox.host.enable = true;
   users.extraGroups.vboxusers.members = [ "luibi" ];
+
+  # Waydroid setup
+  virtualisation.waydroid.enable = true;
+  virtualisation.waydroid.package = pkgs.waydroid-nftables;
 
   system.stateVersion = "26.05";
 
@@ -208,9 +248,7 @@
   hardware.bluetooth.enable = true;
   hardware.bluetooth.powerOnBoot = true;
 
-  # Enable XDG portal services
+  # KDE/Plasma menu integration
   environment.etc."xdg/menus/applications.menu".source =
     "/run/current-system/sw/etc/xdg/menus/plasma-applications.menu";
 }
-
-

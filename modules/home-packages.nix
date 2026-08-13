@@ -16,7 +16,6 @@
     qt6Packages.qt6ct #customize of Qt6 
     qt6.qtwayland #wayland support for Qt6 applications
     qt5.qtwayland #wayland support for Qt5 applications
-    dracula-theme #Theme for various applications
     apple-cursor #Cursor theme inspired by macOS
     graphite-cursors #Cursor theme with a graphite color scheme
     dracula-icon-theme #Icon theme that complements 
@@ -30,9 +29,9 @@
     qbittorrent #Torrent client
 
     # Communication and Social Networks
-    discord
-    betterdiscordctl
-
+    (discord.override {
+      withVencord = true;
+    })
     # Games
     pcsx2 #P2 emulator
 
@@ -44,13 +43,14 @@
     # Development Tools
     code-cursor #Editor for code snippets and quick edits
     vscode #Visual Studio Code editor
-    antigravity #Text editor with a focus on simplicity and fun
-    neovim
+    antigravity-ide #Text editor with a focus on simplicity and fun
+    neovim # my main editor for coding and text editing
+    opencode #Editor for code snippets and quick edits
 
 
     # Terminal and Shell Utilities
     tmux #Terminal multiplexer
-    tty-clock
+    tty-clock #clock for the terminal
     btop #Control system resources in the terminal
     cmatrix #Matrix-style terminal screensaver
     zsh-autosuggestions #suggest commands as you type based on history and completions
@@ -66,6 +66,7 @@
     jq # JSON processor
     wget # Command-line file downloader
     unzip # Extract ZIP files
+    unrar # Extract RAR files 
     curl # URL downloader 
     atuin # Command-line shell history
     eza # Enhanced 'ls' command
@@ -77,12 +78,17 @@
       _7zz = _7zz-rar; # Support for RAR extraction
     }) #search and extract archives with a focus on speed and simplicity
 
+    #Audio and Video Tools
+    stremio-linux-shell #Stremio media center
+
     # --- Hyprland & Wayland Setup ---
     hyprland # Hyprland Wayland compositor
     hyprpaper # Wallpaper manager for Hyprland
-    rofi # Rofi launcher for Wayland
     hyprlock #Lockscreen
     hyprshot # Screenshot tool for Wayland
+    hyprpicker # Color picker for Wayland
+    rofi # Rofi launcher for Wayland
+
 
     # --- Language and runtimes ---
     gcc # GNU Compiler Collection
@@ -112,6 +118,7 @@
     # AI
     gemini-cli #Gemini AI CLI client
     claude-code #Claude AI CLI client
+    codex #AI Chatgpt
   ];
 
 

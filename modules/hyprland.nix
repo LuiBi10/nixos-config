@@ -1,101 +1,147 @@
-{ pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
+let
+  # Direct paths dinamicos
+  home = config.home.homeDirectory;
+
+  # Helper to write raw Lua inline
+  lua = lib.generators.mkLuaInline;
+
+  # Helpers para bindings
+  b = keys: disp: { _args = [ keys (lua disp) ]; };
+  be = keys: disp: { _args = [ keys (lua disp) { repeating = true; } ]; };
+  bel = keys: disp: { _args = [ keys (lua disp) { repeating = true; locked = true; } ]; };
+  bl = keys: disp: { _args = [ keys (lua disp) { locked = true; } ]; };
+  bm = keys: disp: { _args = [ keys (lua disp) { mouse = true; } ]; };
+
+  # Generador dinamico de bindings para Workspaces (1 al 10 / 0)
+  wsBinds = builtins.concatLists (
+    builtins.genList
+      (i:
+        let
+          key = toString (if i == 9 then 0 else i + 1);
+          ws = toString (i + 1);
+        in
+        [
+          (b "SUPER + ${key}" "hl.dsp.focus({ workspace = ${ws} })")
+          (b "SUPER + CTRL + ${key}" "hl.dsp.window.move({ workspace = ${ws} })")
+          (b "SUPER + SHIFT + ${key}" "hl.dsp.window.move({ workspace = ${ws}, follow = false })")
+        ]
+      ) 10
+  );
+in
 {
   wayland.windowManager.hyprland = {
     enable = true;
-
-    # CRÍTICO: con home.stateVersion = "26.05", HM genera por defecto
-    # hyprland.lua (formato Lua nuevo), que no soporta variables tipo $mainMod.
-    # Esto fuerza el formato hyprlang clásico -> ~/.config/hypr/hyprland.conf
-    configType = "hyprlang";
+    configType = "lua";
 
     settings = {
-      monitor = [ ",preferred,auto,auto" ];
-
-      "$mainMod" = "SUPER";
+      monitor = [
+        {
+          output = "";
+          mode = "preferred";
+          position = "auto";
+          scale = "auto";
+        }
+      ];
 
       env = [
-        "QT_QPA_PLATFORM,wayland"
-        "QT_QPA_PLATFORMTHEME,kvantum"
-        "GTK_THEME,Dracula"
-        "QT_STYLE_OVERRIDE,kvantum"
-        "XCURSOR_SIZE,24"
-        "XCURSOR_THEME,Qogir Cursors"
-        "HYPRCURSOR_SIZE,24"
-        "HYPRCURSOR_THEME,Qogir Cursors"
+        { _args = [ "QT_QPA_PLATFORM" "wayland" ]; }
+        { _args = [ "QT_QPA_PLATFORMTHEME" "kvantum" ]; }
+        { _args = [ "GTK_THEME" "Dracula" ]; }
+        { _args = [ "QT_STYLE_OVERRIDE" "kvantum" ]; }
+        { _args = [ "XCURSOR_SIZE" "24" ]; }
+        { _args = [ "XCURSOR_THEME" "Qogir Cursors" ]; }
+        { _args = [ "HYPRCURSOR_SIZE" "24" ]; }
+        { _args = [ "HYPRCURSOR_THEME" "Qogir Cursors" ]; }
       ];
 
-      exec-once = [
-        "systemctl --user start hyprpolkitagent"
-        "ghostty"
-        "nm-applet"
-        "wl-paste --type text --watch cliphist store"
-        "wl-paste --type image --watch cliphist store"
-        "dbus-update-activation-environment --systemd --all && systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_DATA_DIRS GIO_EXTRA_MODULES && systemctl --user start hyprland-session.target"
-      ];
-
-      general = {
-        gaps_in = 2;
-        gaps_out = 8;
-        border_size = 1;
-        "col.active_border" = "rgb(b4befe)";
-        "col.inactive_border" = "rgba(a7c080aa)";
-        resize_on_border = false;
-        allow_tearing = false;
-        layout = "dwindle";
+      on = {
+        _args = [
+          "hyprland.start"
+          (lua ''
+            function()
+              hl.exec_cmd("systemctl --user start hyprpolkitagent")
+              hl.exec_cmd("kitty")
+              hl.exec_cmd("nm-applet")
+              hl.exec_cmd("wl-paste --type text --watch cliphist store")
+              hl.exec_cmd("wl-paste --type image --watch cliphist store")
+              hl.exec_cmd("dbus-update-activation-environment --systemd --all && systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_DATA_DIRS GIO_EXTRA_MODULES && systemctl --user start hyprland-session.target")
+              hl.exec_cmd("${home}/.config/hypr/scripts/spotify_notifier.sh")
+            end
+          '')
+        ];
       };
 
-      decoration = {
-        rounding = 12;
-        active_opacity = 0.9;
-        inactive_opacity = 0.8;
-
-        blur = {
-          enabled = true;
-          size = 5;
-          passes = 3;
-          vibrancy = 0.15;
+      config = {
+        input = {
+          kb_layout = "us,es";
+          kb_options = "grp:alt_shift_toggle";
+          follow_mouse = 1;
+          touchpad.natural_scroll = false;
+          sensitivity = 0;
         };
-      };
 
-      animations = {
-        enabled = true;
-        bezier = [
-          "easeOutQuint,0.23,1,0.32,1"
-          "easeInOutCubic,0.65,0.05,0.36,1"
-          "linear,0,0,1,1"
-          "almostLinear,0.5,0.5,0.75,1.0"
-          "quick,0.15,0,0.1,1"
-        ];
+        general = {
+          gaps_in = 2;
+          gaps_out = 17;
+          border_size = 1;
+          "col.active_border" = "rgb(b4befe)";
+          "col.inactive_border" = "rgba(a7c080aa)";
+          resize_on_border = false;
+          allow_tearing = false;
+          layout = "dwindle";
+        };
 
-        animation = [
-          "global, 1, 10, default"
-          "border, 1, 5.39, easeOutQuint"
-          "windows, 1, 4.79, easeOutQuint"
-          "windowsIn, 1, 4.1, easeOutQuint, popin 87%"
-          "windowsOut, 1, 1.49, linear, popin 87%"
-          "fadeIn, 1, 1.73, almostLinear"
-          "fadeOut, 1, 1.46, almostLinear"
-          "fade, 1, 3.03, quick"
-          "layers, 1, 3.81, easeOutQuint"
-          "layersIn, 1, 4, easeOutQuint, fade"
-          "layersOut, 1, 1.5, linear, fade"
-          "fadeLayersIn, 1, 1.79, almostLinear"
-          "fadeLayersOut, 1, 1.39, almostLinear"
-          "workspaces, 1, 1.94, almostLinear, fade"
-          "workspacesIn, 1, 1.21, almostLinear, fade"
-          "workspacesOut, 1, 1.94, almostLinear, fade"
-        ];
-      };
+        decoration = {
+          rounding = 4;
+          active_opacity = 0.9;
+          inactive_opacity = 0.8;
 
-      # pseudotile fue ELIMINADO en Hyprland 0.55
-      dwindle = {
-        preserve_split = true;
-      };
+          blur = {
+            enabled = true;
+            size = 5;
+            passes = 3;
+            vibrancy = 0.15;
+          };
+        };
 
-      misc = {
-        force_default_wallpaper = 0;
-        disable_hyprland_logo = false;
+        animations = {
+          enabled = true;
+          bezier = [
+            "easeOutQuint,0.23,1,0.32,1"
+            "easeInOutCubic,0.65,0.05,0.36,1"
+            "linear,0,0,1,1"
+            "almostLinear,0.5,0.5,0.75,1.0"
+            "quick,0.15,0,0.1,1"
+          ];
+
+          animation = [
+            "global, 1, 10, default"
+            "border, 1, 5.39, easeOutQuint"
+            "windows, 1, 4.79, easeOutQuint"
+            "windowsIn, 1, 4.1, easeOutQuint, popin 87%"
+            "windowsOut, 1, 1.49, linear, popin 87%"
+            "fadeIn, 1, 1.73, almostLinear"
+            "fadeOut, 1, 1.46, almostLinear"
+            "fade, 1, 3.03, quick"
+            "layers, 1, 3.81, easeOutQuint"
+            "layersIn, 1, 4, easeOutQuint, fade"
+            "layersOut, 1, 1.5, linear, fade"
+            "fadeLayersIn, 1, 1.79, almostLinear"
+            "fadeLayersOut, 1, 1.39, almostLinear"
+            "workspaces, 1, 1.94, almostLinear, fade"
+            "workspacesIn, 1, 1.21, almostLinear, fade"
+            "workspacesOut, 1, 1.94, almostLinear, fade"
+          ];
+        };
+
+        dwindle.preserve_split = true;
+
+        misc = {
+          force_default_wallpaper = 0;
+          disable_hyprland_logo = false;
+        };
       };
 
       device = [
@@ -105,125 +151,139 @@
         }
       ];
 
-      windowrule = [
-        "opacity 0.85 override, match:class ^(discord)$"
-        "opacity 0.85 override, match:class ^(org.kde.dolphin)$"
-        "opacity 0.90 0.85 override, match:class ^(zen-twilight)$"
-        "workspace 3, match:class ^(obsidian)$"
-        "workspace 3, match:class ^(org.kde.dolphin)$"
-        "workspace 3, match:class ^(Spotify)$"
-        "workspace 2, match:class ^(zen-twilight)$"
-        "workspace 4, match:class ^(org.pwmt.zathura)$"
-        "float on, match:title ^(Save File)$"
-        "float on, size 700 600, center on, match:title ^(ghostty-floating)$"
-        "opacity 1.0 override, match:class ^(VirtualBox Machine)$"
-        "opacity 1.0 override, match:class ^(virtualbox)$"
-        "float on, center on, match:class ^(VirtualBox Machine)$"
+      # Unificacion de reglas de ventana
+      window_rule = [
+        {
+          opacity = "0.85 override";
+          workspace = "4";
+          match = { class = "^(discord)$"; };
+        }
+        {
+          opacity = "0.85 override";
+          workspace = "3";
+          match = { class = "^(org.kde.dolphin)$"; };
+        }
+        {
+          opacity = "0.95 0.90 override";
+          workspace = "2";
+          match = { class = "^(zen-twilight)$"; };
+        }
+        {
+          workspace = "3";
+          match = { class = "^(obsidian)$"; };
+        }
+        {
+          workspace = "3";
+          match = { class = "^(Spotify)$"; };
+        }
+        {
+          workspace = "4";
+          match = { class = "^(org.pwmt.zathura)$"; };
+        }
+        {
+          float = true;
+          match = { title = "^(Save File)$"; };
+        }
+        {
+          float = true;
+          size = [ 700 600 ];
+          center = true;
+          match = { title = "^(kitty-floating)$"; };
+        }
+        {
+          # Consolida las 3 reglas de VirtualBox
+          float = true;
+          center = true;
+          opacity = "1.0 override";
+          match = { class = "^([Vv]irtual[Bb]ox Manager)$"; };
+        }
+        {
+          float = true;
+          size = [ "75%" "75%" ];
+          center = true;
+          match = { class = "^(kitty-yazi)$"; };
+        }
+        {
+          float = true;
+          size = [ "85%" "85%" ];
+          center = true;
+          match = { class = "^(kitty-nvim)$"; };
+        }
       ];
 
       bind = [
-        # --- Navegación entre Ventanas (Foco) ---
-        "$mainMod, left, movefocus, l"
-        "$mainMod, right, movefocus, r"
-        "$mainMod, up, movefocus, u"
-        "$mainMod, down, movefocus, d"
+        # --- Navegacion entre Ventanas ---
+        (b "SUPER + left" "hl.dsp.focus({ direction = 'left' })")
+        (b "SUPER + right" "hl.dsp.focus({ direction = 'right' })")
+        (b "SUPER + up" "hl.dsp.focus({ direction = 'up' })")
+        (b "SUPER + down" "hl.dsp.focus({ direction = 'down' })")
 
-        # --- Gestión de Sesión y Waybar ---
-        "$mainMod SHIFT, R, exec, pkill waybar && waybar"
-        "$mainMod SHIFT, Q, exit"
+        # --- Sesion y Waybar ---
+        (b "SUPER + SHIFT + R" "hl.dsp.exec_cmd('pkill waybar && waybar')")
+        (b "SUPER + SHIFT + Q" "hl.dsp.exit()")
 
-        # Window management
-        "$mainMod, F, fullscreen"
-        "$mainMod, Q, killactive"
-        "$mainMod, Space, togglefloating"
-        "$mainMod CTRL, P, pin" # movido: antes chocaba con el script de wallpaper
+        # --- Window management ---
+        (b "SUPER + W" "hl.dsp.window.fullscreen()")
+        (b "SUPER + Q" "hl.dsp.window.close()")
+        (b "ALT + Space" "hl.dsp.window.float({ action = 'toggle' })")
+        (b "SUPER + CTRL + P" "hl.dsp.window.pin({ action = 'toggle' })")
 
-        # Launch apps
-        "$mainMod, Return, exec, ghostty"
-        "$mainMod CTRL, Return, exec, ghostty --title=ghostty-floating"
-        "$mainMod SHIFT, B, exec, ghostty -e btop"
-        "ALT, Space, exec, rofi -show drun"
-        "$mainMod SHIFT, F, exec, XDG_CURRENT_DESKTOP=KDE dolphin"
-        "$mainMod SHIFT, K, exec, XDG_CURRENT_DESKTOP=KDE kate"
-        "$mainMod, R, exec, ghostty -e yazi"
-        "$mainMod, V, exec, ghostty -e nvim"
-        "$mainMod SHIFT, V, exec, code"
-        "$mainMod, B, exec, zen-twilight"
-        "$mainMod, D, exec, discord"
-        "$mainMod, M, exec, spotify"
-        "$mainMod, O, exec, obsidian --enable-features=UseOzonePlatform --ozone-platform=wayland"
-        "ALT CTRL, C, exec, zsh -l -c 'cursor'"
-        "$mainMod CTRL, Space, exec, bash /etc/nixos/modules/scripts/change-wall.sh"
-        "$mainMod, C, exec, ~/.config/hypr/scripts/cliphist.sh c"
+        # --- Launch apps ---
+        (b "SUPER + Return" "hl.dsp.exec_cmd('kitty')")
+        (b "SUPER + CTRL + Return" "hl.dsp.exec_cmd('kitty --title=kitty-floating')")
+        (b "SUPER + SHIFT + B" "hl.dsp.exec_cmd('kitty -e btop')")
+        (b "SUPER + Space" "hl.dsp.exec_cmd('rofi -show drun')")
+        (b "SUPER + F" "hl.dsp.exec_cmd('XDG_CURRENT_DESKTOP=KDE dolphin')")
+        (b "SUPER + SHIFT + K" "hl.dsp.exec_cmd('XDG_CURRENT_DESKTOP=KDE kate')")
+        (b "SUPER + Y" "hl.dsp.exec_cmd('kitty --class kitty-yazi -e yazi')")
+        (b "SUPER + V" "hl.dsp.exec_cmd('kitty --class kitty-nvim -e nvim')")
+        (b "SUPER + SHIFT + V" "hl.dsp.exec_cmd('code')")
+        (b "SUPER + B" "hl.dsp.exec_cmd('zen-twilight')")
+        (b "SUPER + D" "hl.dsp.exec_cmd('discord')")
+        (b "SUPER + M" "hl.dsp.exec_cmd('spotify')")
+        (b "SUPER + O" "hl.dsp.exec_cmd('obsidian --enable-features=UseOzonePlatform --ozone-platform=wayland')")
+        (b "ALT + CTRL + C" "hl.dsp.exec_cmd(\"zsh -l -c 'cursor'\")")
+        (b "SUPER + CTRL + Space" "hl.dsp.exec_cmd('${home}/.config/hypr/scripts/change-wall-final.sh')")
+        (b "SUPER + C" "hl.dsp.exec_cmd('hyprpicker -a')")
+        (b "SUPER + L" "hl.dsp.exec_cmd('hyprlock')")
+        (b "SUPER + K" "hl.dsp.exec_cmd('/etc/nixos/modules/scripts/keyboard.sh')")
+        (b "SUPER + P" "hl.dsp.exec_cmd('cliphist list | rofi -dmenu -p \"Clipboard\" | cliphist decode | wl-copy')")
+        (b "SUPER + ALT + space" "hl.dsp.exec_cmd('${home}/.config/hypr/scripts/powermenu.sh')")
 
-        # Workspaces y Screenshots
-        "$mainMod CTRL, S, movetoworkspace, special"
-        "$mainMod, S, togglespecialworkspace"
-        "$mainMod, 1, workspace, 1"
-        "$mainMod, 2, workspace, 2"
-        "$mainMod, 3, workspace, 3"
-        "$mainMod, 4, workspace, 4"
-        "$mainMod, 5, workspace, 5"
-        "$mainMod, 6, workspace, 6"
-        "$mainMod, 7, workspace, 7"
-        "$mainMod, 8, workspace, 8"
-        "$mainMod, 9, workspace, 9"
-        "$mainMod, 0, workspace, 10"
-        "$mainMod, TAB, workspace, previous"
-        "$mainMod CTRL, J, workspace, -1"
-        "$mainMod CTRL, K, workspace, +1"
-        "$mainMod CTRL, 1, movetoworkspace, 1"
-        "$mainMod CTRL, 2, movetoworkspace, 2"
-        "$mainMod CTRL, 3, movetoworkspace, 3"
-        "$mainMod CTRL, 4, movetoworkspace, 4"
-        "$mainMod CTRL, 5, movetoworkspace, 5"
-        "$mainMod CTRL, 6, movetoworkspace, 6"
-        "$mainMod CTRL, 7, movetoworkspace, 7"
-        "$mainMod CTRL, 8, movetoworkspace, 8"
-        "$mainMod CTRL, 9, movetoworkspace, 9"
-        "$mainMod CTRL, 0, movetoworkspace, 10"
-        "$mainMod ALT, right, movetoworkspace, +1"
-        "$mainMod ALT, left, movetoworkspace, -1"
-        "$mainMod ALT, k, movetoworkspace, +1"
-        "$mainMod ALT, j, movetoworkspace, -1"
-        "$mainMod SHIFT, 1, movetoworkspacesilent, 1"
-        "$mainMod SHIFT, 2, movetoworkspacesilent, 2"
-        "$mainMod SHIFT, 3, movetoworkspacesilent, 3"
-        "$mainMod SHIFT, 4, movetoworkspacesilent, 4"
-        "$mainMod SHIFT, 5, movetoworkspacesilent, 5"
-        "$mainMod SHIFT, 6, movetoworkspacesilent, 6"
-        "$mainMod SHIFT, 7, movetoworkspacesilent, 7"
-        "$mainMod SHIFT, 8, movetoworkspacesilent, 8"
-        "$mainMod SHIFT, 9, movetoworkspacesilent, 9"
-        "$mainMod SHIFT, 0, movetoworkspacesilent, 10"
-        "$mainMod SHIFT, S, exec, hyprshot -m region"
-        "$mainMod, Print, exec, hyprshot -m window"
-        "SHIFT, Print, exec, hyprshot -m output"
-      ];
+        # --- Workspaces y Screenshots ---
+        (b "SUPER + CTRL + S" "hl.dsp.window.move({ workspace = 'special' })")
+        (b "SUPER + S" "hl.dsp.workspace.toggle_special()")
+        (b "SUPER + Tab" "hl.dsp.focus({ workspace = 'previous' })")
+        (b "SUPER + CTRL + J" "hl.dsp.focus({ workspace = 'r-1' })")
+        (b "SUPER + CTRL + K" "hl.dsp.focus({ workspace = 'r+1' })")
+        (b "SUPER + ALT + right" "hl.dsp.window.move({ workspace = 'r+1' })")
+        (b "SUPER + ALT + left" "hl.dsp.window.move({ workspace = 'r-1' })")
+        (b "SUPER + ALT + k" "hl.dsp.window.move({ workspace = 'r+1' })")
+        (b "SUPER + ALT + j" "hl.dsp.window.move({ workspace = 'r-1' })")
+        (b "SUPER + SHIFT + S" "hl.dsp.exec_cmd('hyprshot -m region -o ~/Pictures/Screenshots')")
+        (b "SUPER + Print" "hl.dsp.exec_cmd('hyprshot -m window -o ~/Pictures/Screenshots')")
+        (b "SHIFT + Print" "hl.dsp.exec_cmd('hyprshot -m output -o ~/Pictures/Screenshots')")
 
-      binde = [
-        "$mainMod SHIFT, left, resizeactive, -50 0"
-        "$mainMod SHIFT, right, resizeactive, 50 0"
-        "$mainMod SHIFT, up, resizeactive, 0 -50"
-        "$mainMod SHIFT, down, resizeactive, 0 50"
-      ];
+        # --- Repeating binds ---
+        (be "SUPER + SHIFT + left" "hl.dsp.window.resize({ x = -50, y = 0, relative = true })")
+        (be "SUPER + SHIFT + right" "hl.dsp.window.resize({ x = 50, y = 0, relative = true })")
+        (be "SUPER + SHIFT + up" "hl.dsp.window.resize({ x = 0, y = -50, relative = true })")
+        (be "SUPER + SHIFT + down" "hl.dsp.window.resize({ x = 0, y = 50, relative = true })")
 
-      bindel = [
-        "ALT, F11, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"
-        "ALT, F10, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
-      ];
+        # --- Repeating + Locked binds ---
+        (bel "ALT + F11" "hl.dsp.exec_cmd('/etc/nixos/modules/scripts/volumecontrol.sh --inc')")
+        (bel "ALT + F10" "hl.dsp.exec_cmd('/etc/nixos/modules/scripts/volumecontrol.sh --dec')")
 
-      bindl = [
-        ", XF86AudioMute, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
-        ", XF86AudioPlay, exec, playerctl play-pause"
-        ", XF86AudioNext, exec, playerctl next"
-        ", XF86AudioPrev, exec, playerctl previous"
-      ];
+        # --- Locked binds ---
+        (bl "XF86AudioMute" "hl.dsp.exec_cmd('/etc/nixos/modules/scripts/volumecontrol.sh --toggle')")
+        (bl "XF86AudioPlay" "hl.dsp.exec_cmd('playerctl play-pause')")
+        (bl "XF86AudioNext" "hl.dsp.exec_cmd('playerctl next')")
+        (bl "XF86AudioPrev" "hl.dsp.exec_cmd('playerctl previous')")
 
-      bindm = [
-        "$mainMod, mouse:272, movewindow"
-        "$mainMod, mouse:273, resizewindow"
-      ];
+        # --- Mouse binds ---
+        (bm "SUPER + mouse:272" "hl.dsp.window.drag()")
+        (bm "SUPER + mouse:273" "hl.dsp.window.resize()")
+      ] ++ wsBinds; # Agrega los binds generados dinamicamente
     };
   };
 
@@ -255,29 +315,42 @@
   programs.hyprlock = {
     enable = true;
     settings = {
+      general = {
+        no_fade_in = false;
+        no_fade_out = false;
+        hide_cursor = true;
+        grace = 0;
+        disable_loading = true;
+      };
+
       background = [
         {
           monitor = "";
-          path = "/home/luibi/Pictures/main/bluestairs.png";
+          path = "${home}/.config/hypr/lockscreens/look.jpg";
+          color = "rgba(23, 27, 33, 1.0)";
           blur_passes = 2;
+          blur_size = 5;
+          noise = 0.0117;
           contrast = 0.8916;
           brightness = 0.8172;
+          vibrancy = 0.1696;
+          vibrancy_darkness = 0.0;
         }
       ];
 
       input-field = [
         {
           monitor = "";
-          size = "250, 50";
-          outline_thickness = 3;
-          dots_size = 0.33;
-          dots_spacing = 0.15;
+          size = "300, 60";
+          outline_thickness = 2;
+          dots_size = 0.2;
+          dots_spacing = 0.2;
           dots_center = true;
-          outer_color = "rgb(151515)";
-          inner_color = "rgb(200, 200, 200)";
-          font_color = "rgb(10, 10, 10)";
-          fade_on_empty = true;
-          placeholder_text = "<i>Password...</i>";
+          outer_color = "rgba(80, 188, 223, 1.0)";
+          inner_color = "rgba(23, 27, 33, 0.5)";
+          font_color = "rgba(166, 172, 205, 1.0)";
+          fade_on_empty = false;
+          placeholder_text = "<span foreground=\"##a6accd\">Password...</span>";
           hide_input = false;
           position = "0, -20";
           halign = "center";
@@ -289,18 +362,48 @@
         {
           monitor = "";
           text = "$TIME";
-          color = "rgba(200, 200, 200, 1.0)";
-          font_size = 64;
-          font_family = "Noto Sans";
-          position = "0, 80";
+          color = "rgba(166, 172, 205, 1.0)";
+          font_size = 120;
+          font_family = "JetBrainsMono Nerd Font ExtraBold";
+          position = "0, -100";
+          halign = "center";
+          valign = "top";
+        }
+        {
+          monitor = "";
+          text = "cmd[update:43200000] echo \"$(date +\"%A, %d %B %Y\")\"";
+          color = "rgba(166, 172, 205, 0.8)";
+          font_size = 25;
+          font_family = "JetBrainsMono Nerd Font";
+          position = "0, -300";
+          halign = "center";
+          valign = "top";
+        }
+        {
+          monitor = "";
+          text = "Welcome back, $USER";
+          color = "rgba(166, 172, 205, 1.0)";
+          font_size = 20;
+          font_family = "JetBrainsMono Nerd Font";
+          position = "0, -100";
           halign = "center";
           valign = "center";
+        }
+        {
+          monitor = "";
+          text = "        󰤄";
+          color = "rgba(166, 172, 205, 0.6)";
+          font_size = 25;
+          font_family = "JetBrainsMono Nerd Font";
+          position = "0, 50";
+          halign = "center";
+          valign = "bottom";
         }
       ];
     };
   };
 
-  # --- HYPRPAPER CONFIGURATION (formato nuevo, hyprpaper >= 0.8) ---
+  # --- HYPRPAPER CONFIGURATION ---
   services.hyprpaper = {
     enable = true;
     settings = {
@@ -308,7 +411,7 @@
       wallpaper = [
         {
           monitor = "eDP-1";
-          path = "/home/luibi/Pictures/lu/verde.jpg";
+          path = "${home}/Pictures/lu/verde.jpg";
           fit_mode = "cover";
         }
       ];

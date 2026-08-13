@@ -16,6 +16,8 @@ echo "$INDEX" >"$STATE"
 
 MONITOR=$(hyprctl monitors -j | jq -r '.[0].name')
 
-hyprctl hyprpaper unload all
-hyprctl hyprpaper preload "${FILES[$INDEX]}"
-hyprctl hyprpaper wallpaper "$MONITOR,${FILES[$INDEX]}"
+# Fix for Hyprland 0.55.4 hyprctl crash:
+# Using -j (JSON) avoids the formatting bug that causes a segfault.
+# We also remove 'unload all' which is problematic in this version.
+hyprctl -j hyprpaper preload "${FILES[$INDEX]}" 2>/dev/null
+hyprctl -j hyprpaper wallpaper "$MONITOR,${FILES[$INDEX]}" 2>/dev/null
