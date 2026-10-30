@@ -33,7 +33,6 @@
     kdePackages.qtsvg # Qt SVG library
     kdePackages.plasma-workspace # Plasma workspace components
     xdg-desktop-portal-gtk # GTK portal (its service is disabled in configuration.nix)
-    xdg-desktop-portal-hyprland # Desktop portal for Hyprland
 
     # --- SDDM Theme ---
     where-is-my-sddm-theme
