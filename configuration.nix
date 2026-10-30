@@ -17,6 +17,17 @@
       efiSupport = true;
       devices = [ "nodev" ];
       useOSProber = true;
+
+      # Omarchy boots via Limine on its own ESP; os-prober can't detect it
+      extraEntries = ''
+        menuentry "Omarchy" {
+          insmod part_gpt
+          insmod fat
+          insmod chain
+          search --no-floppy --fs-uuid --set=root 4BFA-4229
+          chainloader /EFI/limine/limine_x64.efi
+        }
+      '';
       gfxmodeEfi = "1920x1080";
 
       theme = pkgs.stdenv.mkDerivation {
