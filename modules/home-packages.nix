@@ -26,19 +26,25 @@
     mpv # Media player
     yt-dlp # Video downloader
     qbittorrent # Torrent client
+    obs-studio # Screen recording and streaming
+    rescrobbled # MPRIS scrobbler for Last.fm
 
     # --- Communication ---
     (discord.override {
       withVencord = true;
     })
+    telegram-desktop # Telegram client
 
     # --- Games ---
     pcsx2 # PS2 emulator
+    azahar # 3DS emulator
+    chessx # Chess database and GUI
 
     # --- Productivity ---
     obsidian # Markdown notes
     zathura # PDF/document viewer
     libreoffice-qt # Office suite
+    crow-translate # Translator (SUPER + T)
 
     # --- Editors ---
     code-cursor # Cursor AI editor
@@ -70,6 +76,9 @@
     zoxide # Smarter 'cd'
     sesh # tmux session manager
     fd # Fast file finder
+    chafa # Images in the terminal
+    parted # CLI partition editor
+    gparted # GUI partition editor
     # Terminal file manager, with RAR support in 7-Zip
     (yazi.override {
       _7zz = _7zz-rar;
