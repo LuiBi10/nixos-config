@@ -1,14 +1,15 @@
 { config, pkgs, inputs, lib, ... }:
 {
-  # Import hardware configuration
+  # Hardware and system-wide packages
   imports = [
     ./hardware-configuration.nix
     ./modules/packages.nix
   ];
 
-  # Enable experimental Nix features for flakes
+  # Enable flakes
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
+  # GRUB (EFI) with os-prober and the distro-grub-themes NixOS theme
   boot.loader = {
     efi.canTouchEfiVariables = true;
     grub = {
@@ -32,21 +33,21 @@
     };
   };
 
-  # Hostname and networking configuration
+  # Networking
   networking.hostName = "nixos";
   networking.networkmanager.enable = true;
 
-  # DConf and DBus settings for desktop compatibility
+  # DConf over D-Bus, needed by GTK apps for settings
   programs.dconf.enable = true;
   services.dbus.packages = with pkgs; [ dconf ];
 
-  # Inject GLib schemas globally
+  # GLib/GSettings schemas for GTK apps
   environment.systemPackages = with pkgs; [
     glib
     gsettings-desktop-schemas
   ];
 
-  # Timezone and localization settings
+  # Time zone and locale (Colombian date/time format)
   time.timeZone = "America/Bogota";
   i18n.defaultLocale = "en_US.UTF-8";
   i18n.extraLocaleSettings = {
@@ -61,6 +62,7 @@
     LC_TIME = "es_CO.UTF-8";
   };
 
+  # Dual-function keys (tap/hold), mappings in dual-function-keys.yaml
   services.interception-tools = {
     enable = true;
     plugins = [ pkgs.interception-tools-plugins.dual-function-keys ];
@@ -73,7 +75,7 @@
     '';
   };
 
-  # X server and desktop environment settings
+  # Display manager (SDDM on Wayland) and Plasma 6
   services.xserver.enable = true;
   services.displayManager.sddm = {
     enable = true;
@@ -83,14 +85,14 @@
   };
   services.desktopManager.plasma6.enable = true;
 
-  # Keyboard layout settings
+  # Keyboard layout (X11 and TTY)
   services.xserver.xkb = {
     layout = "us";
     variant = "";
   };
   console.keyMap = "us";
 
-  # Audio configuration using PipeWire
+  # Audio via PipeWire; switch to new sinks when they connect
   services.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
@@ -107,6 +109,7 @@
     };
   };
 
+  # Ollama API, listening on all interfaces
   services.ollama = {
     enable = true;
     package = pkgs.ollama;
@@ -114,10 +117,10 @@
     port = 11434;
   };
 
-  # Allow unfree packages 
+  # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
-  # User configuration
+  # User account
   users.users.luibi = {
     isNormalUser = true;
     description = "luibi";
@@ -125,12 +128,39 @@
     packages = [ ];
   };
 
-  # Default shell configuration
+  # Default shell
   programs.zsh.enable = true;
   users.defaultUserShell = pkgs.zsh;
 
-  # Enable GVFS for file manager virtual filesystems
+  # GVFS: trash, MTP and network mounts in file managers
   services.gvfs.enable = true;
+
+  # Polkit: let wheel users in an active local session unlock/mount internal
+  # disks (e.g. the Omarchy LUKS partition) without an admin prompt per action.
+  # The LUKS passphrase itself is still required.
+  security.polkit.enable = true;
+  security.polkit.extraConfig = ''
+    polkit.addRule(function(action, subject) {
+      var udisksActions = [
+        "org.freedesktop.udisks2.filesystem-mount",
+        "org.freedesktop.udisks2.filesystem-mount-system",
+        "org.freedesktop.udisks2.filesystem-mount-other-seat",
+        "org.freedesktop.udisks2.filesystem-unmount-others",
+        "org.freedesktop.udisks2.encrypted-unlock",
+        "org.freedesktop.udisks2.encrypted-unlock-system",
+        "org.freedesktop.udisks2.encrypted-unlock-other-seat",
+        "org.freedesktop.udisks2.encrypted-lock-others",
+        "org.freedesktop.udisks2.eject-media",
+        "org.freedesktop.udisks2.eject-media-system",
+        "org.freedesktop.udisks2.power-off-drive",
+        "org.freedesktop.udisks2.power-off-drive-system"
+      ];
+      if (udisksActions.indexOf(action.id) >= 0 &&
+          subject.isInGroup("wheel") && subject.local && subject.active) {
+        return polkit.Result.YES;
+      }
+    });
+  '';
 
   # Permitted insecure packages
   nixpkgs.config.permittedInsecurePackages = [
@@ -138,10 +168,10 @@
     "qtwebengine-5.15.19"
   ];
 
-  # Hyprland settings for Wayland compositor
+  # Hyprland compositor (user config in modules/hyprland.nix)
   programs.hyprland.enable = true;
 
-  # XDG desktop portal setup using Hyprland + KDE backends exclusively
+  # XDG portals: Hyprland first, KDE as fallback (no GTK portal)
   xdg.portal = {
     enable = true;
     extraPortals = [
@@ -158,15 +188,16 @@
     };
   };
 
-  # Prevent systemd from ever starting xdg-desktop-portal-gtk
+  # Never start xdg-desktop-portal-gtk
   systemd.user.services.xdg-desktop-portal-gtk = {
     enable = false;
     unitConfig.RefuseManualStart = true;
   };
 
-  # Nix-ld settings
+  # Run unpatched dynamically linked binaries
   programs.nix-ld.enable = true;
 
+  # MariaDB with a local 'curso' database and user
   services.mysql = {
     enable = true;
     package = pkgs.mariadb;
@@ -178,6 +209,7 @@
     '';
   };
 
+  # Weekly garbage collection and store optimisation
   nix.gc = {
     automatic = true;
     dates = "weekly";
@@ -188,7 +220,7 @@
 
   services.flatpak.enable = true;
 
-  # System-wide environment variables for Qt, GTK, and Wayland session
+  # Wayland session, GTK and Qt environment variables
   environment.variables = {
     XDG_CURRENT_DESKTOP = "Hyprland";
     XDG_SESSION_TYPE = "wayland";
@@ -204,6 +236,7 @@
     QT_WAYLAND_DISABLE_WINDOWDECORATION = "1";
   };
 
+  # Nerd Fonts
   fonts.packages = [
     pkgs.nerd-fonts.jetbrains-mono
     pkgs.nerd-fonts.iosevka
@@ -212,9 +245,10 @@
     pkgs.nerd-fonts.monoid
   ];
 
+  # SSH and Ollama
   networking.firewall.allowedTCPPorts = [ 22 11434 ];
 
-  # Tor Service
+  # Tor daemon
   services.tor = {
     enable = true;
     openFirewall = true;
@@ -228,27 +262,28 @@
     '';
   };
 
-  # Docker setup
+  # Rootless Docker
   virtualisation.docker.rootless = {
     enable = true;
     setSocketVariable = true;
   };
 
-  # VirtualBox setup
+  # VirtualBox
   virtualisation.virtualbox.host.enable = true;
   users.extraGroups.vboxusers.members = [ "luibi" ];
 
-  # Waydroid setup
+  # Waydroid (Android container)
   virtualisation.waydroid.enable = true;
   virtualisation.waydroid.package = pkgs.waydroid-nftables;
 
+  # Release of the first install; do not change
   system.stateVersion = "26.05";
 
-  # Bluetooth settings
+  # Bluetooth, powered on at boot
   hardware.bluetooth.enable = true;
   hardware.bluetooth.powerOnBoot = true;
 
-  # KDE/Plasma menu integration
+  # Plasma application menu, so KDE apps (e.g. Dolphin) can list apps outside Plasma
   environment.etc."xdg/menus/applications.menu".source =
     "/run/current-system/sw/etc/xdg/menus/plasma-applications.menu";
 }

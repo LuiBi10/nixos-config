@@ -1,20 +1,22 @@
 { config, pkgs, lib, ... }:
 
 let
-  # Direct paths dinamicos
+  # User home directory, used to build absolute paths
   home = config.home.homeDirectory;
 
   # Helper to write raw Lua inline
   lua = lib.generators.mkLuaInline;
 
-  # Helpers para bindings
+  # Bind helpers: b = normal, be = repeats while held, bl = also works on the
+  # lock screen, bel = both, bm = mouse button
   b = keys: disp: { _args = [ keys (lua disp) ]; };
   be = keys: disp: { _args = [ keys (lua disp) { repeating = true; } ]; };
   bel = keys: disp: { _args = [ keys (lua disp) { repeating = true; locked = true; } ]; };
   bl = keys: disp: { _args = [ keys (lua disp) { locked = true; } ]; };
   bm = keys: disp: { _args = [ keys (lua disp) { mouse = true; } ]; };
 
-  # Generador dinamico de bindings para Workspaces (1 al 10 / 0)
+  # Workspace binds for keys 1-9 and 0 (= workspace 10): focus, move window,
+  # move window without following it
   wsBinds = builtins.concatLists (
     builtins.genList
       (i:
@@ -56,14 +58,16 @@ in
         { _args = [ "HYPRCURSOR_THEME" "Qogir Cursors" ]; }
       ];
 
+      # Programs started with Hyprland
       on = {
         _args = [
           "hyprland.start"
           (lua ''
             function()
-              hl.exec_cmd("systemctl --user start hyprpolkitagent")
+              hl.exec_cmd("${pkgs.hyprpolkitagent}/libexec/hyprpolkitagent")
               hl.exec_cmd("kitty")
               hl.exec_cmd("nm-applet")
+              hl.exec_cmd("crow")
               hl.exec_cmd("wl-paste --type text --watch cliphist store")
               hl.exec_cmd("wl-paste --type image --watch cliphist store")
               hl.exec_cmd("dbus-update-activation-environment --systemd --all && systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_DATA_DIRS GIO_EXTRA_MODULES && systemctl --user start hyprland-session.target")
@@ -84,7 +88,7 @@ in
 
         general = {
           gaps_in = 2;
-          gaps_out = 17;
+          gaps_out = 9;
           border_size = 1;
           "col.active_border" = "rgb(b4befe)";
           "col.inactive_border" = "rgba(a7c080aa)";
@@ -151,7 +155,16 @@ in
         }
       ];
 
-      # Unificacion de reglas de ventana
+      # Layer rules: blur behind rofi's translucent background
+      layer_rule = [
+        {
+          blur = true;
+          ignore_alpha = 0.3;
+          match = { namespace = "^rofi$"; };
+        }
+      ];
+
+      # Window rules: per-app workspace, opacity, floating and size
       window_rule = [
         {
           opacity = "0.85 override";
@@ -170,7 +183,7 @@ in
         }
         {
           workspace = "3";
-          match = { class = "^(obsidian)$"; };
+          match = { class = "^(md.Obsidian)$"; };
         }
         {
           workspace = "3";
@@ -191,7 +204,6 @@ in
           match = { title = "^(kitty-floating)$"; };
         }
         {
-          # Consolida las 3 reglas de VirtualBox
           float = true;
           center = true;
           opacity = "1.0 override";
@@ -212,13 +224,13 @@ in
       ];
 
       bind = [
-        # --- Navegacion entre Ventanas ---
+        # --- Window focus ---
         (b "SUPER + left" "hl.dsp.focus({ direction = 'left' })")
         (b "SUPER + right" "hl.dsp.focus({ direction = 'right' })")
         (b "SUPER + up" "hl.dsp.focus({ direction = 'up' })")
         (b "SUPER + down" "hl.dsp.focus({ direction = 'down' })")
 
-        # --- Sesion y Waybar ---
+        # --- Session and Waybar ---
         (b "SUPER + SHIFT + R" "hl.dsp.exec_cmd('pkill waybar && waybar')")
         (b "SUPER + SHIFT + Q" "hl.dsp.exit()")
 
@@ -228,7 +240,7 @@ in
         (b "ALT + Space" "hl.dsp.window.float({ action = 'toggle' })")
         (b "SUPER + CTRL + P" "hl.dsp.window.pin({ action = 'toggle' })")
 
-        # --- Launch apps ---
+        # --- Apps and tools ---
         (b "SUPER + Return" "hl.dsp.exec_cmd('kitty')")
         (b "SUPER + CTRL + Return" "hl.dsp.exec_cmd('kitty --title=kitty-floating')")
         (b "SUPER + SHIFT + B" "hl.dsp.exec_cmd('kitty -e btop')")
@@ -236,7 +248,7 @@ in
         (b "SUPER + F" "hl.dsp.exec_cmd('XDG_CURRENT_DESKTOP=KDE dolphin')")
         (b "SUPER + SHIFT + K" "hl.dsp.exec_cmd('XDG_CURRENT_DESKTOP=KDE kate')")
         (b "SUPER + Y" "hl.dsp.exec_cmd('kitty --class kitty-yazi -e yazi')")
-        (b "SUPER + V" "hl.dsp.exec_cmd('kitty --class kitty-nvim -e nvim')")
+        (b "SUPER + N" "hl.dsp.exec_cmd('kitty --class kitty-nvim -e nvim')")
         (b "SUPER + SHIFT + V" "hl.dsp.exec_cmd('code')")
         (b "SUPER + B" "hl.dsp.exec_cmd('zen-twilight')")
         (b "SUPER + D" "hl.dsp.exec_cmd('discord')")
@@ -247,10 +259,25 @@ in
         (b "SUPER + C" "hl.dsp.exec_cmd('hyprpicker -a')")
         (b "SUPER + L" "hl.dsp.exec_cmd('hyprlock')")
         (b "SUPER + K" "hl.dsp.exec_cmd('/etc/nixos/modules/scripts/keyboard.sh')")
-        (b "SUPER + P" "hl.dsp.exec_cmd('cliphist list | rofi -dmenu -p \"Clipboard\" | cliphist decode | wl-copy')")
+        (b "SUPER + T" "hl.dsp.exec_cmd('/etc/nixos/modules/scripts/crow-translate.sh')")
+        (b "SUPER + P" "hl.dsp.exec_cmd('cliphist list | rofi -dmenu -no-show-icons -p \"Clipboard\" | cliphist decode | wl-copy')")
         (b "SUPER + ALT + space" "hl.dsp.exec_cmd('${home}/.config/hypr/scripts/powermenu.sh')")
 
-        # --- Workspaces y Screenshots ---
+        # Universal paste: terminals take CTRL + SHIFT + V, everything else CTRL + V
+        (b "SUPER + V" ''
+          function()
+            local w = hl.get_active_window()
+            local class = (w and w.class or ""):lower()
+            local terminals = { "^kitty", "alacritty", "foot", "wezterm", "ghostty", "konsole" }
+            local mods = "CTRL"
+            for _, pattern in ipairs(terminals) do
+              if class:find(pattern) then mods = "CTRL SHIFT" break end
+            end
+            hl.dispatch(hl.dsp.send_shortcut({ mods = mods, key = "V" }))
+          end
+        '')
+
+        # --- Workspaces and screenshots ---
         (b "SUPER + CTRL + S" "hl.dsp.window.move({ workspace = 'special' })")
         (b "SUPER + S" "hl.dsp.workspace.toggle_special()")
         (b "SUPER + Tab" "hl.dsp.focus({ workspace = 'previous' })")
@@ -264,26 +291,26 @@ in
         (b "SUPER + Print" "hl.dsp.exec_cmd('hyprshot -m window -o ~/Pictures/Screenshots')")
         (b "SHIFT + Print" "hl.dsp.exec_cmd('hyprshot -m output -o ~/Pictures/Screenshots')")
 
-        # --- Repeating binds ---
+        # --- Resize active window (repeats while held) ---
         (be "SUPER + SHIFT + left" "hl.dsp.window.resize({ x = -50, y = 0, relative = true })")
         (be "SUPER + SHIFT + right" "hl.dsp.window.resize({ x = 50, y = 0, relative = true })")
         (be "SUPER + SHIFT + up" "hl.dsp.window.resize({ x = 0, y = -50, relative = true })")
         (be "SUPER + SHIFT + down" "hl.dsp.window.resize({ x = 0, y = 50, relative = true })")
 
-        # --- Repeating + Locked binds ---
+        # --- Volume (repeats while held, works when locked) ---
         (bel "ALT + F11" "hl.dsp.exec_cmd('/etc/nixos/modules/scripts/volumecontrol.sh --inc')")
         (bel "ALT + F10" "hl.dsp.exec_cmd('/etc/nixos/modules/scripts/volumecontrol.sh --dec')")
 
-        # --- Locked binds ---
+        # --- Media keys (work when locked) ---
         (bl "XF86AudioMute" "hl.dsp.exec_cmd('/etc/nixos/modules/scripts/volumecontrol.sh --toggle')")
         (bl "XF86AudioPlay" "hl.dsp.exec_cmd('playerctl play-pause')")
         (bl "XF86AudioNext" "hl.dsp.exec_cmd('playerctl next')")
         (bl "XF86AudioPrev" "hl.dsp.exec_cmd('playerctl previous')")
 
-        # --- Mouse binds ---
+        # --- Mouse: SUPER + left drag moves, SUPER + right drag resizes ---
         (bm "SUPER + mouse:272" "hl.dsp.window.drag()")
         (bm "SUPER + mouse:273" "hl.dsp.window.resize()")
-      ] ++ wsBinds; # Agrega los binds generados dinamicamente
+      ] ++ wsBinds; # Generated workspace binds (see let block)
     };
   };
 
@@ -298,10 +325,12 @@ in
       };
 
       listener = [
+        # Lock after 5 minutes idle
         {
           timeout = 300;
           on-timeout = "loginctl lock-session";
         }
+        # Turn the screen off 30 seconds later
         {
           timeout = 330;
           on-timeout = "hyprctl dispatch dpms off";
@@ -326,7 +355,7 @@ in
       background = [
         {
           monitor = "";
-          path = "${home}/.config/hypr/lockscreens/look.jpg";
+          path = "${home}/Pictures/main/hyprlock.jpg";
           color = "rgba(23, 27, 33, 1.0)";
           blur_passes = 2;
           blur_size = 5;
@@ -403,18 +432,8 @@ in
     };
   };
 
-  # --- HYPRPAPER CONFIGURATION ---
-  services.hyprpaper = {
-    enable = true;
-    settings = {
-      splash = false;
-      wallpaper = [
-        {
-          monitor = "eDP-1";
-          path = "${home}/Pictures/lu/verde.jpg";
-          fit_mode = "cover";
-        }
-      ];
-    };
-  };
+  # --- WALLPAPER DAEMON (awww) ---
+  # Keeps the current wallpaper visible while the next one loads and
+  # animates the change; restores the last wallpaper on login.
+  services.awww.enable = true;
 }

@@ -1,7 +1,15 @@
 { config, pkgs, lib, ... }:
 
-let plugins = [ ]; # Zsh plugins: empty list to avoid conflicts
+let plugins = [ ]; # Oh My Zsh plugins (autosuggestions/highlighting come from home-manager)
 in {
+  # 🚀 Starship with the custom "Aqua" theme (kitty colors)
+  programs.starship = {
+    enable = true;
+    enableZshIntegration = true;
+    settings = builtins.fromTOML (builtins.readFile ./starship-aqua.toml);
+  };
+
+  # 🐚 Zsh configuration
   programs.zsh = {
     enable = true;
     enableCompletion = true;
@@ -11,14 +19,14 @@ in {
     oh-my-zsh = {
       enable = true;
       plugins = plugins;
-      theme = "miloshadzic";
+      theme = ""; # Prompt is handled by Starship
     };
 
     shellAliases = {
-      # Custom aliases
+      # Edit NixOS config files, rebuild and clean up
       hyp = "sudo -E nvim /etc/nixos/modules/hyprland.nix";
       zh = "sudo -E nvim /etc/nixos/modules/zshrc.nix";
-      way = "/etc/nixos/modules/hyprland.nix";
+      way = "nvim ~/.config/waybar/config";
       home = "sudo -E nvim /etc/nixos/home.nix";
       flake = "sudo -E nvim /etc/nixos/flake.nix";
       pack = "sudo -E nvim /etc/nixos/modules/packages.nix";
@@ -26,6 +34,7 @@ in {
       conf = "sudo -E nvim /etc/nixos/configuration.nix";
       build = "[ -f ~/.gtkrc-2.0 ] && rm ~/.gtkrc-2.0; sudo nixos-rebuild switch --flake /etc/nixos#nixos";
       garbage = "sudo nix-collect-garbage -d";
+      # Modern replacements and shortcuts
       cat = "bat --theme=base16";
       ls = "eza --icons=always --color=always -a";
       ll = "eza --icons=always --color=always -la";
@@ -35,7 +44,7 @@ in {
     };
 
     initContent = ''
-      # 🚀 Environment variables
+      # 🌐 Environment variables
       export VISUAL="nvim"
       export EDITOR="nvim"
       export PATH="$HOME/.local/bin:/usr/local/opt:/usr/bin:$PATH"
@@ -46,10 +55,7 @@ in {
       export HISTORY_IGNORE="(ls|cd|pwd|exit|sudo reboot|history|cd -|cd ..)"
       export PATH="$HOME/Scripts:$PATH"
 
-      export QT_QPA_PLATFORMTHEME=gtk2
-      export KDE_USE_WALLET=false
-
-      # 🚀 API Keys
+      # 🔑 Secrets (API keys), kept out of the Nix store
       if [ -f ~/.zsh_secrets ]; then
         source ~/.zsh_secrets
       fi
@@ -63,9 +69,6 @@ in {
              hist_ignore_all_dups hist_save_no_dups \
              hist_find_no_dups extended_history inc_append_history
 
-      # ❌ Initialize completion (must be done before binding keys)
-      autoload -U compinit && compinit
-
       # 🚀 Zoxide & Atuin initialization
       if command -v zoxide &> /dev/null; then
         eval "$(zoxide init zsh)"
@@ -74,23 +77,13 @@ in {
         eval "$(atuin init zsh)"
       fi
 
-      # 🚀 Function yz to open yazi with zoxide query
+      # 📂 yz <query>: open yazi in the directory zoxide matches
       unalias yz 2>/dev/null
       yz() {
         yazi "$(zoxide query "$@")"
       }
 
-      # 🎯 Smart blank space (Pro Tip)
-      typeset -g FIRST_PROMPT=1
-      precmd() {
-        if [[ -z "$FIRST_PROMPT" ]]; then
-          print ""
-        else
-          unset FIRST_PROMPT
-        fi
-      }
-
-      # IDEs detection and auto-start logic
+      # 🖥️ Start tmux and fastfetch in interactive shells, except in VS Code/Cursor terminals
       if [[ -o interactive && 
             -z "$VSCODE_INJECTION" && 
             -z "$CURSOR_SESSION" && 
@@ -102,16 +95,18 @@ in {
        if command -v tmux &> /dev/null && [ -z "$TMUX" ]; then
           exec tmux new-session
        fi
-        fastfetch
+       fastfetch
       fi
 
       # 🎯 Completion style
       zstyle ':completion:*' menu select=1
 
-      # ✅ KEY REBINDING
+      # ⌨️ Key bindings
+      # 1. Tab to accept the autosuggestion
       bindkey -r '^I'
       bindkey '^I' autosuggest-accept
-      # 2. Shift + Tab for traditional expansion menu fallback
+      
+      # 2. Shift + Tab opens the regular completion menu
       bindkey '^[[Z' menu-expand-or-complete
 
       # 3. Ctrl + E to edit the current command line in Neovim
@@ -122,12 +117,14 @@ in {
       # 4. Alt + C to navigate directories via Zoxide
       bindkey -s '^[c' 'zi^M'
 
-      # 5. Smart history search using Arrow keys
+      # 5. Up/Down prefix search for ^[[A/^[[B. Oh My Zsh enables keypad mode
+      #    (^[OA/^[OB), so in practice Up opens Atuin
       bindkey '^[[A' up-line-or-search
       bindkey '^[[B' down-line-or-search
     '';
   };
 
+  # zsh-autosuggestions: match on the previous command, compute asynchronously
   home.sessionVariables = {
     ZSH_AUTOSUGGEST_STRATEGY = "match_prev_cmd";
     ZSH_AUTOSUGGEST_USE_ASYNC = "1";

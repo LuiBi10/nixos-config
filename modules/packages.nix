@@ -1,43 +1,42 @@
 { pkgs, ... }: {
 
-  # System packages
+  # System-wide packages
   environment.systemPackages = with pkgs; [
 
     # --- System & Performance Tools ---
-    polkit # Authorization framework
-    brightnessctl # Control display brightness
-    wl-clipboard # Wayland clipboard manager
-    cliphist #clipboard history manager for Wayland
-    hyprsunset #Night light adjustment for Hyprland
+    polkit # Privilege authorization framework
+    brightnessctl # Screen brightness control
+    wl-clipboard # Wayland clipboard CLI (wl-copy/wl-paste)
+    cliphist # Clipboard history for Wayland
+    hyprsunset # Night light for Hyprland
     hyprpolkitagent # Polkit agent for Hyprland
-    marksman # Bookmark manager for the terminal
-    home-manager # Dotfile manager for NixOS
-    imagemagick # Convert images
-    mermaid-cli # Diagrams Mermaed
-    sqlite # Frencuency historial storage database
-    ghostscript # Render PDF files
-    stylua # Linter para Lua
+    marksman # Markdown language server
+    home-manager # Home Manager CLI
+    imagemagick # Image conversion and editing
+    mermaid-cli # Render Mermaid diagrams
+    sqlite # SQLite CLI and library
+    ghostscript # PostScript/PDF interpreter
+    stylua # Lua formatter
     #nwg-look # GTK theme configurator
-    networkmanagerapplet #network manager applet for Wayland
-    efibootmgr #Boot manager for UEFI systems
-    os-prober #Program to detect other operating systems on the machine
-    pamixer # Command-line mixer for PulseAudio
-    libnotify # Desktop notifications library
-    proton-vpn #Proton GUI
+    networkmanagerapplet # NetworkManager tray applet (nm-applet)
+    efibootmgr # Manage UEFI boot entries
+    os-prober # Detect other OSes for GRUB
+    pamixer # CLI volume mixer (PulseAudio/PipeWire)
+    libnotify # Desktop notifications (notify-send)
+    proton-vpn # Proton VPN client
+
     # --- Audio & Multimedia ---
-    pavucontrol # PulseAudio volume control
-    playerctl # Media player controller
+    pavucontrol # Volume control GUI
+    playerctl # MPRIS media player control
 
     # --- GUI Applications & Desktop Enhancements ---
     kdePackages.qtsvg # Qt SVG library
-    kdePackages.plasma-workspace #plasma workspace components
-    xdg-desktop-portal-gtk # Desktop portal for GTK apps
+    kdePackages.plasma-workspace # Plasma workspace components
+    xdg-desktop-portal-gtk # GTK portal (its service is disabled in configuration.nix)
     xdg-desktop-portal-hyprland # Desktop portal for Hyprland
 
     # --- SDDM Theme ---
     where-is-my-sddm-theme
-
-
   ];
 }
 

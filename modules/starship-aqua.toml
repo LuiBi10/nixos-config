@@ -1,0 +1,132 @@
+# "Aqua" Starship theme — colors taken from ~/.config/kitty/current-theme.conf
+"$schema" = 'https://starship.rs/config-schema.json'
+
+add_newline = true
+palette = "aqua"
+
+format = """
+[](teal)\
+$os\
+$username\
+[](bg:mint fg:teal)\
+$directory\
+[](fg:mint bg:deep)\
+$git_branch\
+$git_status\
+[](fg:deep bg:shade)\
+$nix_shell\
+$python\
+$nodejs\
+$rust\
+$golang\
+$c\
+$java\
+[](fg:shade bg:night)\
+$cmd_duration\
+[ ](fg:night)\
+$character"""
+
+right_format = "$time"
+
+[palettes.aqua]
+teal  = "#54ceb4"
+mint  = "#88f2dc"
+deep  = "#1c3530"
+shade = "#15201e"
+night = "#2e4a44"
+black = "#000000"
+white = "#ffffff"
+muted = "#6272a4"
+
+[os]
+disabled = false
+style = "bg:teal fg:black"
+format = "[ $symbol]($style)"
+
+[os.symbols]
+NixOS = " "
+Linux = " "
+Arch = " "
+Macos = " "
+
+[username]
+show_always = true
+style_user = "bg:teal fg:black bold"
+style_root = "bg:teal fg:black bold"
+format = "[$user ]($style)"
+
+[directory]
+style = "bg:mint fg:black bold"
+format = "[ $path ]($style)[$read_only]($read_only_style)"
+read_only = "󰌾 "
+read_only_style = "bg:mint fg:black"
+truncation_length = 3
+truncation_symbol = "…/"
+
+[directory.substitutions]
+"Documents" = "󰈙 "
+"Downloads" = " "
+"Music" = "󰝚 "
+"Pictures" = " "
+".config" = " "
+
+[git_branch]
+symbol = ""
+style = "bg:deep"
+format = "[[ $symbol $branch ](fg:mint bg:deep)]($style)"
+
+[git_status]
+style = "bg:deep"
+format = "[[($all_status$ahead_behind )](fg:teal bg:deep)]($style)"
+
+[nix_shell]
+symbol = ""
+style = "bg:shade"
+format = "[[ $symbol $state ](fg:mint bg:shade)]($style)"
+
+[python]
+symbol = ""
+style = "bg:shade"
+format = "[[ $symbol ($version) ](fg:teal bg:shade)]($style)"
+
+[nodejs]
+symbol = ""
+style = "bg:shade"
+format = "[[ $symbol ($version) ](fg:teal bg:shade)]($style)"
+
+[rust]
+symbol = ""
+style = "bg:shade"
+format = "[[ $symbol ($version) ](fg:teal bg:shade)]($style)"
+
+[golang]
+symbol = ""
+style = "bg:shade"
+format = "[[ $symbol ($version) ](fg:teal bg:shade)]($style)"
+
+[c]
+symbol = ""
+style = "bg:shade"
+format = "[[ $symbol ($version) ](fg:teal bg:shade)]($style)"
+
+[java]
+symbol = ""
+style = "bg:shade"
+format = "[[ $symbol ($version) ](fg:teal bg:shade)]($style)"
+
+[cmd_duration]
+min_time = 2000
+style = "bg:night"
+format = "[[  $duration ](fg:mint bg:night)]($style)"
+
+
+[time]
+disabled = false
+time_format = "%R"
+style = "bg:night"
+format = "[](fg:night)[[  $time ](fg:muted bg:night)]($style)[](fg:night)"
+
+[character]
+success_symbol = "[❯](bold teal)"
+error_symbol = "[✗](bold white)"
+vimcmd_symbol = "[❮](bold mint)"

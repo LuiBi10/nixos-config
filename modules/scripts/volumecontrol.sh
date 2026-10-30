@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
+# Volume and mic control with dunst notifications (pamixer)
 
 iDIR="$HOME/.config/dunst/icons/vol"
 
-# Get Volume
+# Output volume
 get_volume() {
     pamixer --get-volume
 }
 
-# Get Icon
+# Icon for the current volume
 get_icon() {
     if [ "$(pamixer --get-mute)" == "true" ]; then
         echo "$iDIR/muted-speaker.svg"
@@ -18,13 +19,13 @@ get_icon() {
         elif [ -f "$iDIR/vol-$current.svg" ]; then
             echo "$iDIR/vol-$current.svg"
         else
-            # Fallback to nearest tens or general icon
+            # No icon for this exact level: generic one
             echo "$iDIR/vol-icon.svg"
         fi
     fi
 }
 
-# Notify
+# Volume notification
 notify_user() {
     volume=$(get_volume)
     icon=$(get_icon)
@@ -35,7 +36,7 @@ notify_user() {
     fi
 }
 
-# Increase Volume
+# Unmute and raise volume
 inc_volume() {
     if [ "$(pamixer --get-mute)" == "true" ]; then
         pamixer -u
@@ -44,7 +45,7 @@ inc_volume() {
     notify_user
 }
 
-# Decrease Volume
+# Unmute and lower volume
 dec_volume() {
     if [ "$(pamixer --get-mute)" == "true" ]; then
         pamixer -u
@@ -53,19 +54,19 @@ dec_volume() {
     notify_user
 }
 
-# Toggle Mute
+# Toggle output mute
 toggle_mute() {
     pamixer -t
     notify_user
 }
 
-# Toggle Mic
+# Toggle mic mute
 toggle_mic() {
     pamixer --default-source -t
     notify_mic_user
 }
 
-# Get Mic Icon
+# Mic icon
 get_mic_icon() {
     if [ "$(pamixer --default-source --get-mute)" == "true" ]; then
         echo "$iDIR/muted-mic.svg"
@@ -74,7 +75,7 @@ get_mic_icon() {
     fi
 }
 
-# Notify for Microphone
+# Mic notification
 notify_mic_user() {
     volume=$(pamixer --default-source --get-volume)
     icon=$(get_mic_icon)
@@ -85,19 +86,19 @@ notify_mic_user() {
     fi
 }
 
-# Increase MIC Volume
+# Raise mic volume
 inc_mic_volume() {
     pamixer --default-source -i 5
     notify_mic_user
 }
 
-# Decrease MIC Volume
+# Lower mic volume
 dec_mic_volume() {
     pamixer --default-source -d 5
     notify_mic_user
 }
 
-# Execute accordingly
+# Dispatch on the first argument
 case "$1" in
     "--get") get_volume ;;
     "--inc") inc_volume ;;
