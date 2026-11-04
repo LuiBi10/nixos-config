@@ -15,6 +15,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     flake-utils.url = "github:numtide/flake-utils";
+    sonora.url = "github:sonorahq/sonora";
   };
 
   outputs = inputs@{ nixpkgs, home-manager, zen-browser, ... }:

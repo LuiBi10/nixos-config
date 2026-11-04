@@ -1,4 +1,4 @@
-{ pkgs, config, ... }:
+{ pkgs, config, inputs, ... }:
 
 {
   home.packages = with pkgs; [
@@ -28,6 +28,7 @@
     qbittorrent # Torrent client
     obs-studio # Screen recording and streaming
     rescrobbled # MPRIS scrobbler for Last.fm
+    inputs.sonora.packages.${pkgs.stdenv.hostPlatform.system}.default # Sonora music player
 
     # --- Communication ---
     (discord.override {
