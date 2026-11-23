@@ -6,37 +6,6 @@ let
     rev = "71640b9456110f3bac2130d0b387a3154a9fb4d2"; # master @ 2026-09-26
     hash = "sha256-95Lfr4yiu7Yyff/pVgLCyKRX/btjdTASIqJ785XePG0=";
   };
-
-  # Waybar master needs libcava 1.0.0 (nixpkgs vendors 0.10.7-beta for 0.15.0).
-  # Vendor it here so meson does not try to download it inside the sandbox.
-  libcava = {
-    version = "1.0.0";
-    src = pkgs.fetchFromGitHub {
-      owner = "LukashonakV";
-      repo = "cava";
-      tag = "1.0.0";
-      hash = "sha256-0r5aAmTs+FcmS501tNYKxG9H+Pq6i32BDRBEjWW6M74=";
-    };
-  };
-
-  waybarGit = pkgs.waybar.overrideAttrs (oldAttrs: {
-    src = pkgs.fetchFromGitHub {
-      owner = "Alexays";
-      repo = "Waybar";
-      rev = "16843896794a9c595139318420f81f40e84f8c78"; # master @ 2026-09-26
-      hash = "sha256-Y/bf7OmtwrEhdRDTkh4OVAEZX5ixL+io0W/UPJuto+g=";
-    };
-    # Extra dependency and flags required by master
-    buildInputs = (oldAttrs.buildInputs or [ ]) ++ [ pkgs.modemmanager ];
-    mesonFlags = (oldAttrs.mesonFlags or [ ]) ++ [ "-Dtests=disabled" ];
-    postUnpack = ''
-      pushd "$sourceRoot"
-      cp -R --no-preserve=mode,ownership ${libcava.src} subprojects/cava-${libcava.version}
-      patchShebangs .
-      popd
-    '';
-    doCheck = false;
-  });
 in
 {
   home.username = "luibi";
@@ -97,7 +66,6 @@ in
 
   programs.waybar = {
     enable = true;
-    package = waybarGit;
     systemd = {
       enable = true;
       targets = [ "hyprland-session.target" ];
